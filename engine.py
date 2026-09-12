@@ -19,6 +19,15 @@ class utils:
         else:
             print("system is either dependent or inconsistent")
 
+    def ref(mat):
+        if not isinstance(mat, matrix):
+            raise TypeError("can only get ref of augmented n*n matrix systems")
+
+        if mat.cols != mat.rows + 1:
+            raise ValueError(
+                "to get ref of matrix you must provide an augmented n*n matrix"
+            )
+
     def dot(m1, m2):
         if not (isinstance(m1, matrix) and isinstance(m2, matrix)):
             raise TypeError("can only dot two matrices")
