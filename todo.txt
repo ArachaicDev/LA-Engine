@@ -1,0 +1,5 @@
+implement wedge product
+implement rref solver
+implement diagonalization
+implement *trace, rank, null space, column space, row space
+better determinant calculator
