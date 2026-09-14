@@ -19,14 +19,102 @@ class utils:
         else:
             print("system is either dependent or inconsistent")
 
-    def ref(mat):
+    def solve_system_gaussian(mat):
         if not isinstance(mat, matrix):
-            raise TypeError("can only get ref of augmented n*n matrix systems")
+            raise TypeError("can only solve augmented n*n matrix systems")
 
         if mat.cols != mat.rows + 1:
             raise ValueError(
-                "to get ref of matrix you must provide an augmented n*n matrix"
+                "to solve a system of equations you must provide an augmented n*n matrix"
             )
+
+        reduced = utils.rref(mat)
+        missing = 0
+        for row in reduced:
+            if utils._leading_zeroes(row) == mat.cols:
+                missing += 1
+
+        if missing:
+            print(f"missing {missing} independent equations to solve for a point")
+            print(f"got\n{reduced}\nmatrix")
+        else:
+            return reduced[:-1]
+
+    def _leading_zeroes(mat):
+        return next(
+            (index for index, value in enumerate(mat) if value not in [0, [0]]),
+            len(mat),
+        )
+
+    def ref(mat):
+        if not isinstance(mat, matrix):
+            raise TypeError("can only get ref of matrices")
+
+        if mat.cols == 1:
+            return matrix([1] + [0] * (mat.rows - 1), mat.rows, 1, safe=True)
+
+        def sort_mat(mat):
+            return matrix(
+                sorted(
+                    [item for item in mat],
+                    key=lambda a: utils._leading_zeroes(a),
+                ),
+                safe=True,
+            )
+
+        for key_row in range(mat.rows - 1):
+            mat = sort_mat(mat)
+
+            zeroes = utils._leading_zeroes(mat[key_row])
+
+            if zeroes == mat.cols:
+                break
+
+            for other_row in range(key_row + 1, mat.rows):
+                value = mat[key_row:zeroes]
+                if value:
+                    mat[other_row] -= (mat[other_row:zeroes] / value) * mat[key_row]
+                else:
+                    break
+
+        for row in range(mat.rows):
+            zeroes = utils._leading_zeroes(mat[row])
+            if zeroes == mat.cols:
+                break
+            value = mat[row:zeroes]
+            if value:
+                mat[row] /= value
+
+        return sort_mat(mat)
+
+    def rref(mat):
+        if not isinstance(mat, matrix):
+            raise TypeError("can only get rref of matrices")
+
+        mat = utils.ref(mat)
+
+        zeroes = [utils._leading_zeroes(row) for row in mat]
+        try:
+            starting = zeroes.index(mat.cols)
+
+        except ValueError:
+            starting = mat.rows - 1
+
+        for key_row in range(starting, 0, -1):
+            zero = zeroes[key_row]
+            if zero >= mat.cols - 1:
+                continue
+            value = mat[key_row:zero]
+
+            for row in range(key_row - 1, -1, -1):
+                mat[row] -= (mat[row:zero] / value) * mat[key_row]
+
+        return mat
+
+    def identity(size):
+        return matrix(
+            [[int(col == row) for col in range(size)] for row in range(size)], safe=True
+        )
 
     def dot(m1, m2):
         if not (isinstance(m1, matrix) and isinstance(m2, matrix)):
@@ -237,6 +325,24 @@ class matrix:
             )
 
         return NotImplemented
+
+    def __pow__(self, other):
+        if not isinstance(other, int):
+            return NotImplemented
+
+        if other < 0:
+            raise ValueError("matrix exponentiation only supports positive integers")
+
+        if other == 0:
+            if self.rows == self.cols:
+                return utils.identity(self.rows)
+
+            raise ValueError("there exists no zero power for non square matrices")
+
+        res = self.copy()
+        for i in range(other - 1):
+            res *= self
+        return res
 
     def __getitem__(self, key):
         """
