@@ -1,6 +1,11 @@
 class utils:
     def format(num, precision=8):
-        return str(round(num, precision))
+        res = str(round(num, precision))
+        if "." in res:
+            res = res.rstrip("0").rstrip(".")
+        if res == "-0":
+            res = "0"
+        return res
 
     def solve_system_inverse(mat):
         if not isinstance(mat, matrix):
@@ -46,22 +51,32 @@ class utils:
             len(mat),
         )
 
-    def ref(mat):
+    def ref(mat, get_swaps=False, scale=True):
         if not isinstance(mat, matrix):
             raise TypeError("can only get ref of matrices")
 
         if mat.cols == 1:
             return matrix([1] + [0] * (mat.rows - 1), mat.rows, 1, safe=True)
 
-        def sort_mat(mat):
-            return matrix(
-                sorted(
-                    [item for item in mat],
-                    key=lambda a: utils._leading_zeroes(a),
-                ),
-                safe=True,
-            )
+        swaps = 0
 
+        def sort_mat(mat):
+            nonlocal swaps
+
+            temp = [utils._leading_zeroes(arr) for arr in mat]
+            finished = False
+            while not finished:
+                finished = True
+                for i in range(mat.rows - 1):
+                    if temp[i] > temp[i + 1]:
+                        temp[i], temp[i + 1] = temp[i + 1], temp[i]
+                        mat[i], mat[i + 1] = mat[i + 1], mat[i]
+                        swaps += 1
+                        finished = False
+
+            return mat
+
+        mat = mat.copy()
         for key_row in range(mat.rows - 1):
             mat = sort_mat(mat)
 
@@ -77,15 +92,19 @@ class utils:
                 else:
                     break
 
-        for row in range(mat.rows):
-            zeroes = utils._leading_zeroes(mat[row])
-            if zeroes == mat.cols:
-                break
-            value = mat[row:zeroes]
-            if value:
-                mat[row] /= value
+        if scale:
+            for row in range(mat.rows):
+                zeroes = utils._leading_zeroes(mat[row])
+                if zeroes == mat.cols:
+                    break
+                value = mat[row:zeroes]
+                if value:
+                    mat[row] /= value
 
-        return sort_mat(mat)
+        mat = sort_mat(mat)
+        if get_swaps:
+            return mat, swaps
+        return mat
 
     def rref(mat):
         if not isinstance(mat, matrix):
@@ -102,7 +121,7 @@ class utils:
 
         for key_row in range(starting, 0, -1):
             zero = zeroes[key_row]
-            if zero >= mat.cols - 1:
+            if zero == mat.cols:
                 continue
             value = mat[key_row:zero]
 
@@ -301,7 +320,7 @@ class matrix:
 
         return NotImplemented
 
-    def matmul(self, other):
+    def __matmul__(self, other):
         return self * other
 
     def __truediv__(self, other):
@@ -500,7 +519,7 @@ class matrix:
 
         return True
 
-    def det(self):
+    def det_naive(self):
         def det(values, dimensions):
             if dimensions == 2:
                 return values[3] * values[0] - values[1] * values[2]
@@ -529,6 +548,26 @@ class matrix:
 
         return det(self.values, self.rows)
 
+    def det(self):
+        if self.rows != self.cols:
+            raise ValueError(
+                f"only square matrices have determinants, this matrix is {self.rows}x{self.cols}"
+            )
+
+        if self.cols == 2:
+            return self.values[0] * self.values[3] - self.values[1] * self.values[2]
+
+        if self.cols == 1:
+            return self.values[0]
+
+        reduced, swaps = utils.ref(self, get_swaps=True, scale=False)
+        res = 1
+        for i in range(self.rows):
+            res *= reduced[i:i]
+        if swaps % 2:
+            res *= -1
+        return res
+
     def minor(self, row, column):
         if row < 0:
             row = self.rows + row
@@ -552,6 +591,7 @@ class matrix:
             self.cols - 1,
             safe=True,
         )
+
         return res.det()
 
     def cof(self, row, column):
@@ -626,3 +666,11 @@ class matrix:
 
     def __deepcopy__(self):
         return self.copy()
+
+
+def main():
+    pass
+
+
+if __name__ == "__main__":
+    main()
