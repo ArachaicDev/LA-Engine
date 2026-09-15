@@ -1,5 +1,8 @@
 implement wedge product
-implement rref solver
+* implement rref solver
 implement diagonalization
 implement *trace, rank, null space, column space, row space
-better determinant calculator
+* better determinant calculator
+* improve number display
+implement strassen algorithm for multiplication / det
+* implement systems sovler via backref 

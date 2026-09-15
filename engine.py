@@ -594,10 +594,27 @@ class matrix:
 
         return res.det()
 
+    def minor_matrix(self):
+        return matrix(
+            [
+                self.minor(row, col)
+                for row in range(self.rows)
+                for col in range(self.cols)
+            ],
+            self.rows,
+            self.cols,
+        )
+
     def cof(self, row, column):
+        return self.cof(row, column)
+
+    def cofactor(self, row, column):
         return self.minor(row, column) * ((-1) ** ((row + column) % 2))
 
     def cof_matrix(self):
+        return self.cofactor_matrix()
+
+    def cofactor_matrix(self):
         return matrix(
             [
                 self.cof(row, col)
@@ -627,6 +644,9 @@ class matrix:
         return self.cof_matrix().T()
 
     def inv(self, precalc_det=None):
+        return self.inverse(precalc_det=precalc_det)
+
+    def inverse(self, precalc_det=None):
         if precalc_det is not None:
             determinant = precalc_det
         else:
